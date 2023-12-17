@@ -3,6 +3,7 @@ package hchannel
 import (
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestChannel(t *testing.T) {
@@ -18,6 +19,29 @@ func TestChannel(t *testing.T) {
 	}
 	c.Close()
 	if total != count {
+		t.Errorf("channel multi error")
+	}
+}
+
+func TestChannelTimer(t *testing.T) {
+	total := 0
+	count := 16
+	c := NewChannel(16, func(i interface{}) {
+		if _, ok := i.(time.Time); ok {
+			total += 1
+		} else {
+			total += i.(int)
+		}
+	}).Run()
+	for i := 0; i < count; i++ {
+		if ok := c.Input(1); !ok {
+			t.Errorf("input fail")
+		}
+	}
+	c.Reset(time.Millisecond)
+	time.Sleep(10 * time.Millisecond)
+	c.Close()
+	if total != count+1 {
 		t.Errorf("channel multi error")
 	}
 }
