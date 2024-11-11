@@ -69,8 +69,8 @@ func (c *Channel) Input(i interface{}) bool {
 	}
 }
 
-// mustInput 避免使用 mustInput，在 close 时会引起 panic
-func (c *Channel) mustInput(i interface{}) {
+// MustInput 避免使用 MustInput，在 close 时会引起 panic
+func (c *Channel) MustInput(i interface{}) {
 	c.c <- i
 }
 
