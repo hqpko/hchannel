@@ -80,4 +80,6 @@ func (c *Channel) Close() {
 	c.wg.Add(c.gc)
 	close(c.c)
 	c.wg.Wait()
+	c.h = nil
+	c.t = nil
 }
