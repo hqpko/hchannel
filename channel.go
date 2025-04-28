@@ -1,7 +1,6 @@
 package hchannel
 
 import (
-	"math"
 	"sync"
 	"time"
 )
@@ -15,11 +14,19 @@ type Channel struct {
 }
 
 func NewChannel(chanSize int, handler func(interface{})) *Channel {
-	return NewChannelMulti(chanSize, 1, handler)
+	return NewChannelMulti(chanSize, 1, 0, handler)
 }
 
-func NewChannelMulti(chanSize, goroutineCount int, handler func(interface{})) *Channel {
-	return &Channel{c: make(chan interface{}, chanSize), gc: goroutineCount, h: handler, t: time.NewTimer(math.MaxInt64)}
+func NewChannelTimer(chanSize int, timerDuration time.Duration, handler func(interface{})) *Channel {
+	return NewChannelMulti(chanSize, 1, timerDuration, handler)
+}
+
+func NewChannelMulti(chanSize, goroutineCount int, timerDuration time.Duration, handler func(interface{})) *Channel {
+	c := &Channel{c: make(chan interface{}, chanSize), gc: goroutineCount, h: handler}
+	if timerDuration > 0 {
+		c.t = time.NewTimer(timerDuration)
+	}
+	return c
 }
 
 func (c *Channel) Run() *Channel {
@@ -30,11 +37,17 @@ func (c *Channel) Run() *Channel {
 }
 
 func (c *Channel) Reset(d time.Duration) {
+	if c.t == nil {
+		panic("channel timer is nil")
+	}
 	c.stopTimer()
 	c.t.Reset(d)
 }
 
 func (c *Channel) stopTimer() {
+	if c.t == nil {
+		return
+	}
 	if !c.t.Stop() {
 		select {
 		case <-c.t.C:
@@ -45,7 +58,16 @@ func (c *Channel) stopTimer() {
 
 func (c *Channel) run() {
 	defer c.wg.Done()
+	if c.t == nil {
+		for i := range c.c {
+			c.h(i)
+		}
+	} else {
+		c.runTimer()
+	}
+}
 
+func (c *Channel) runTimer() {
 	for {
 		select {
 		case i, ok := <-c.c:

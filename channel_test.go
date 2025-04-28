@@ -26,7 +26,7 @@ func TestChannel(t *testing.T) {
 func TestChannelTimer(t *testing.T) {
 	total := 0
 	count := 16
-	c := NewChannel(16, func(i interface{}) {
+	c := NewChannelTimer(16, time.Second, func(i interface{}) {
 		if _, ok := i.(time.Time); ok {
 			total += 1
 		} else {
@@ -49,7 +49,7 @@ func TestChannelTimer(t *testing.T) {
 func TestChannelMulti(t *testing.T) {
 	total := int64(0)
 	count := int64(16)
-	c := NewChannelMulti(16, 4, func(i interface{}) {
+	c := NewChannelMulti(16, 4, 0, func(i interface{}) {
 		atomic.AddInt64(&total, i.(int64))
 	}).Run()
 	for i := int64(0); i < count; i++ {
